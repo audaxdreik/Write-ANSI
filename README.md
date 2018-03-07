@@ -1,25 +1,59 @@
-# PowerShell Module: Write-ANSI
+# ANSI 256 Color for PowerShell
 
-Explain the general idea of the project.
+Allows you to easily insert shorthand ANSI 256 color escape sequences into a string object.
 
-## Design Choices
+## Description
 
-Go into more detail on why I made some of the decisions I did, including the replacement patterns.
+Now that the Windows console natively supports ANSI escape sequences (see Prerequisites) it's time to make use of them! But entering in syntactically correct sequences can be cumbersome, *especially* for color sequences. By focusing strictly on the 256 color escape sequences of ANSI I've created a shorthand that utilizes the same basic form of the sequence without all the extra characters. A sequence is initiated with '[[' and can contain a foreground, background, or foreground & background number from 0-255. The sequence terminator, 'm' is only required when the proceding string would ambiguously interpret with the escape code.
 
-### Prerequisites
+Assuming 'e' = `[char](0x1B)`
+
+* Foreground, 'e[38;5;208m' becomes '[[208'
+* Background, 'e[48;5;110m' becomes '[[;110'
+* Foreground & Background, 'e[38;5;196me[48;5;32m' becomes '[[196;32'
+* Reset, 'e[0m' becomes '[[' (not to be confused with '[[0' which is 'e[38;5;0m' or black foreground text)
+
+## Prerequisites
 
 * **PowerShell 5**: to support the use of the custom [ANSIString] class
 * **Windows 10 Creators Update** or alternative console such as **ConEmu**: to support ANSI escape sequences
 
 Forking the code to remove the custom ANSIString class and using an alternative console could expand the potential audience for this to include older versions of PowerShell and Windows 7.
 
-## General Usage
+## Installing
 
-Some quick examples?
+Simply copy \Write-ANSI into your module path and run `Import-Module -Name Write-ANSI`
 
-## Limitations and Restrictions
+## Examples
 
-### Breaking out of Different Streams
+### General Usage
+
+``` powershell
+Show-ANSI256Table
+```
+Prints a colorful table to the console for easy reference.
+
+``` powershell
+Write-ANSI -Message '[[208mHello, world!'
+```
+Sets only the foreground text to color 208 (orange). Uses 'm' character to explicitly close the sequence.
+
+``` powershell
+Write-ANSI -Message '[[;160WARNING![[ user not found!'
+```
+Sets only the background text to color 160 (bright red) and leaves whatever foreground text color was previously set or in use by the console. Resets both the background and foreground color to the console default after printing 'WARNING!'. Both notations omit the 'm' character leaving the closing sequence implied.
+
+``` powershell
+Write-ANSI -Message '[[118;128mHello, world!'
+```
+Sets the foreground text to color 118 (neon green) and the background text to color 128 (purple). Uses 'm' character to explicitly close the sequence.
+
+``` powershell
+Write-Information -MessageData (Write-ANSI -Message '[[208mHello, world!') -InformationAction Continue
+```
+Print colorful messages to your console without cluttering the output stream.
+
+### Breaking Out of Streams
 
 ANSI sequences will be translated whenever they are printed to the console which means you are capable of doing color output on all streams including Error, Warning, and Verbose. Be warned however that when the reset sequence is naturally appended to the end of every string from the Write-ANSI commandlet, it will reset to the default foreground and background color of the console and not the default color of the current stream. Note the following problematic usage,
 
@@ -36,6 +70,8 @@ Write-Verbose -Message (Write-ANSI -Message "unable to find [[208$user[[11 in di
 ```
 
 The same would of course apply to the Error stream using red (9).
+
+## Discussion
 
 ### The Case for Wrapping to the ANSIString Class
 
@@ -73,3 +109,15 @@ $result.Content = $result.Content.Replace("-")
 ```
 
 Finally, by setting all the properties to hidden, ToString() is called automatically when it drops out of the pipeline. Otherwise you'd end up with a labeled table of the Content and Length properties which is not what we want.
+
+## Versioning
+
+[SemVer](http://semver.org/) style versioning will be applied to help ensure this code can be used in production with reasonable guarantees against breaking changes.
+
+## Authors
+
+* **Audax Dreik** - *Initial work, 1.0.0 release* - 🦒
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details

@@ -1,5 +1,5 @@
 # easy reference ANSI escape sequence
-$E = [char](0x1B)
+$e = [char](0x1B)
 
 class ANSIString {
 
@@ -25,9 +25,9 @@ class ANSIString {
 }
 
 <#
-.SYNOPSIS
+    .SYNOPSIS
     Easily translate ANSI 256 color escape sequences.
-.DESCRIPTION
+    .DESCRIPTION
     Replaces '[[m' notated string pieces with the appropriately formatted ESC[38;5;#m or ESC[48;5;#m ANSI escape
     sequences. Foreground [[#m, background [[;#m, foreground and background [[#;#m, and reset [[m sequences can be
     defined from the Xterm 256 color chart.
@@ -36,30 +36,30 @@ class ANSIString {
     to be confused with [[0m which translates to ESC[38;5;0m or black foreground text ).
 
     Accepts color range 0-255 for both foreground and background. Background colors should be preceded by a single
-    semicolon ';' character and never any spaces. Improper sequences will not be digested. The trailing 'm' is optional 
+    semicolon ';' character and never any spaces. Improper sequences will not be digested. The trailing 'm' is optional
     and only strictly required when needed for disambiguation such as in the example "[[20m5 errors" which could
     otherwise improperly evaluate to the string " errors" with 205 foreground text.
 
     ESC[0m is automatically applied at the end of every message in order to keep any previously set escape sequences
     from bleeding into other output or your console prompt.
-.PARAMETER Message
-    The message for which ANSI formatted escape sequences will be replaced. Will replace any pieces notated in the form
-    of [[#m with the appropriate 256 color ANSI escape sequence.
-.EXAMPLE
-    PS C:\> Write-ANSI -Message '[[208mHello, world!'
+    .PARAMETER Message
+    The message for which ANSI formatted escape sequences will be replaced. Will replace any pieces notated in the
+    form of [[#m with the appropriate 256 color ANSI escape sequence.
+    .EXAMPLE
+    PS C:\>Write-ANSI -Message '[[208mHello, world!'
 
-    Prints "Hello, world!" to the screen in orange text.
-.EXAMPLE
-    PS C:\> Write-ANSI -Message '[[;160WARNING![[ user not found!'
+    Prints [38;5;208mHello, world![0m to the screen in orange text.
+    .EXAMPLE
+    PS C:\>Write-ANSI -Message '[[;160WARNING![[ user not found!'
 
-    Prints "WARNING!" to the screen using color code 160 (bright orange/red) as the background and whatever foreground
+    Prints [48;5;160mWARNING![0m to the screen using color code 160 (bright orange/red) as the background and whatever foreground
     color was previously specified or in use by the console. The text is then reset to the default foreground and
     background colors before printing the rest of the string.
-.EXAMPLE
-    PS C:\> Write-ANSI -Message '[[118;128mHello, world!'
+    .EXAMPLE
+    PS C:\>Write-ANSI -Message '[[118;128mHello, world!'
 
-    Prints "Hello, world!" to the screen with bright green foreground text and purple background.
-.NOTES
+    Prints [38;5;118m[48;5;128mHello, world![0m to the screen with bright green foreground text and purple background.
+    .NOTES
     Requires Windows 10 Creators Update or custom console such as ConEmu to properly display ANSI sequences.
 #>
 function Write-ANSI {
@@ -73,9 +73,9 @@ function Write-ANSI {
         [string]$Message
     )
 
-    Begin { }
+    begin { }
 
-    Process {
+    process {
 
         # extract each '[[' notated escape sequence
         $ANSICodePieces = ([regex]::Matches($Message, '\[\[((\d{1,3})?(;\d{1,3})?)?m?')).Value
@@ -84,31 +84,40 @@ function Write-ANSI {
         foreach ($acp in $ANSICodePieces) {
 
             switch -regex ($acp) {
+
                 '^\[\[m?$' {
+
                     # reset block, '[[' or '[[m'
-                    $ANSIColorCode = "$E[0m"
+                    $ANSIColorCode = "$e[0m"
+
                 }
                 '^\[\[;([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])m?$' {
+
                     # background color block, '[[;#' or '[[;#m'
-                    $ANSIColorCode = "$E[48;5;$($acp -replace '\[\[;|m')m"
+                    $ANSIColorCode = "$e[48;5;$($acp -replace '\[\[;|m')m"
+
                 }
                 '^\[\[([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5]);([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])m?$' {
+
                     # foreground and background color block, '[[#;#' or '[[#;#m'
                     # -split drops semicolon leaving '[[#' and '#' or '#m' pieces
                     $colorCodes = $acp -split ';'
-                    $ANSIColorCode = "$E[38;5;$($colorCodes[0] -replace '\[')m$E[48;5;$($colorCodes[1] -replace 'm')m"
+
+                    $ANSIColorCode = "$e[38;5;$($colorCodes[0] -replace '\[')m$e[48;5;$($colorCodes[1] -replace 'm')m"
+
                 }
                 '^\[\[([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])m?$' {
+
                     # foreground color block, '[[#' or '[[#m'
-                    $ANSIColorCode = "$E[38;5;$($acp -replace '\[|m')m"
+                    $ANSIColorCode = "$e[38;5;$($acp -replace '\[|m')m"
+
                 }
                 default {
-                    Write-Verbose -Message "unsupported ANSI color code block: $acp"
-                    <#
-                        in this case, $ANSIColorCode is not initilized and snips the entire unsupported code from the
-                        resultant string when the -replace below is evaluated
-                    #>
+
+                    # unsupported code results in empty $ANSIColorCode which snips $acp in the following -replace
+
                 }
+
             }
 
             # replace the notated piece with the actual ANSI code in original message string
@@ -116,28 +125,28 @@ function Write-ANSI {
 
         }
 
-        # reset the color at the end of every message regardless, otherwise prompt or other output could become tainted
-        $Message += "$E[0m"
+        # reset color at end of every message regardless, otherwise prompt or other output could become tainted
+        $Message += "$e[0m"
 
-        # wrap the message in our custom class so we can easily access the adjusted length
+        # wrap message in custom class to allow easy access to adjusted length
         Write-Output -InputObject ([ANSIString]::New($Message))
 
     }
 
-    End { }
+    end { }
 
 }
 
 <#
-.SYNOPSIS
+    .SYNOPSIS
     Displays a quick reference of available 256 ANSI colors.
-.DESCRIPTION
+    .DESCRIPTION
     Outputs a full color table from 0-255 of the available colors that can be used with Write-ANSI.
-.EXAMPLE
-    PS C:\> Show-ANSI256Table
+    .EXAMPLE
+    PS C:\>Show-ANSI256Table
 
     The only possible way to use this function, prints out the table.
-.NOTES
+    .NOTES
     Or check https://upload.wikimedia.org/wikipedia/commons/1/15/Xterm_256color_chart.svg
 #>
 function Show-ANSI256Table {
@@ -167,6 +176,6 @@ function Show-ANSI256Table {
 
 }
 
-Export-ModuleMember -Function Write-ANSI
-Export-ModuleMember -Function Show-ANSI256Table
-Export-ModuleMember -Variable E
+New-Alias -Name 'esc' -Value 'Write-ANSI'
+
+Export-ModuleMember -Alias 'esc' -Variable 'e'
