@@ -6,12 +6,12 @@ Allows you to easily insert shorthand ANSI 256 color escape sequences into a str
 
 Now that the Windows console natively supports ANSI escape sequences (see Prerequisites) it's time to make use of them! But entering in syntactically correct sequences can be cumbersome, *especially* for color sequences. By focusing strictly on the 256 color escape sequences of ANSI I've created a shorthand that utilizes the same basic form of the sequence without all the extra characters. A sequence is initiated with '[[' and can contain a foreground, background, or foreground & background number from 0-255. The sequence terminator, 'm' is only required when the proceding string would ambiguously interpret with the escape code.
 
-Assuming 'e' = `[char](0x1B)`
+Assuming '^' = `[char](0x1B)`
 
-* Foreground, 'e[38;5;208m' becomes '[[208'
-* Background, 'e[48;5;110m' becomes '[[;110'
-* Foreground & Background, 'e[38;5;196me[48;5;32m' becomes '[[196;32'
-* Reset, 'e[0m' becomes '[[' (not to be confused with '[[0' which is 'e[38;5;0m' or black foreground text)
+* Foreground, **^[38;5;208m** becomes **[[208**
+* Background, **^[48;5;110m** becomes **[[;110**
+* Foreground & Background, **^[38;5;196me[48;5;32m** becomes **[[196;32**
+* Reset, **^[0m** becomes **[[** (not to be confused with [[0 which is ^[38;5;0m or black foreground text)
 
 ## Prerequisites
 
